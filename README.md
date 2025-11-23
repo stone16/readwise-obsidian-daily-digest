@@ -7,7 +7,8 @@ Automated knowledge synthesis system for Obsidian vaults using Claude Code.
 This system automatically generates Daily Digests from your Obsidian notes, transforming scattered daily notes into coherent knowledge synthesis with multi-platform content distribution.
 
 **Key Features**:
-- 📊 **Automated Daily Digests**: Synthesize modified notes into structured summaries
+- 📊 **Automated Daily Digests**: Synthesize modified notes into concise, structured summaries (processes yesterday by default for timezone consistency)
+- 🔍 **Vault-Wide Relationship Discovery**: Explore entire vault to find hidden connections
 - 🔄 **Batch Processing**: Handle high-volume note days (15+ notes) with intelligent chunking
 - 📱 **Multi-Platform Distribution**: Generate drafts for Xiaohongshu, WeChat, Twitter
 - 🛡️ **Read-Only Safety**: Never modifies source notes, only reads and generates outputs
@@ -115,23 +116,31 @@ Interactive runner with vault selection and date options:
 
 **Options**:
 - `--vault <path>`: Specify vault path directly
-- `--date <YYYY-MM-DD>`: Custom date (default: today)
+- `--date <YYYY-MM-DD>`: Custom date (default: yesterday)
 - `--skip-drafts`: Skip platform draft generation
 - `--yes`: Skip confirmation prompt
 
-### Automated Execution (Cron)
+**Note**: All scripts default to yesterday's date to avoid timezone issues and ensure complete days are processed.
 
-Install daily automation at 8:00 AM:
+### Automated Execution (with Laptop Wake-up Support)
+
+Install daily automation at 8:00 AM with automatic catch-up for missed days:
 
 ```bash
 ./scripts/install_cron.sh
 
-# Custom time and timezone:
-./scripts/install_cron.sh --time 09:30 --timezone America/New_York
+# Custom time:
+./scripts/install_cron.sh --time 09:30
 
 # Uninstall:
 ./scripts/install_cron.sh --uninstall
 ```
+
+**Laptop-Friendly Features**:
+- **macOS**: Uses `launchd` (better than cron for laptops)
+- **Yesterday Processing**: Processes yesterday's notes by default (timezone-safe)
+- **Catch-up**: Automatically processes up to 3 missed days when laptop wakes up
+- **Smart Detection**: Checks if digest already exists before regenerating
 
 ### Direct Invocation
 
@@ -146,7 +155,6 @@ SKIP_SUMMARY=true ./scripts/daily_runner.sh /path/to/vault
 ```
 
 ## Output Structure
-
 ### Daily Digest
 
 Generated at: `DailyDigest/Daily Digest YYYY-MM-DD.md`
@@ -164,25 +172,29 @@ tags: [daily-digest, auto-generated]
 - **Top Tags**: #llm-agents, #automation, #knowledge-management
 - **Primary Focus**: LLM agent architecture and automation
 
-## 🧠 Synthesis
-[Thematic narrative connecting notes]
-
 ## 📝 Highlights
 
 ### [[Note Title]]
-**TL;DR**: One-sentence summary
+**Key Points**:
+- Main insight or topic
+- Key finding or argument
+- Important detail
 
-**Full Summary**:
-[2-3 paragraph comprehensive summary]
-
-**Key Quote**: > "Extracted quote"
+**Summary**: [1-2 sentence overview connecting the points]
 
 **Action Items**:
-- [ ] Specific todo
+- [ ] Specific todo (if any)
+
+## 🧠 Synthesis
+[1-2 paragraph narrative connecting today's notes thematically and revealing patterns discovered]
 
 ## 🔗 Connections
-- [[Connected Note 1]]
-- [[Connected Note 2]]
+**From Today's Notes**:
+- [[Note referenced in today's files]]
+
+**Related Notes in Vault** (discovered via exploration):
+- [[Older Note 1]] - Similar topic or project connection
+- [[Older Note 2]] - Referenced by or references today's notes
 ```
 
 ### Platform Drafts
@@ -202,12 +214,13 @@ Generated at: `DailyDigest/Drafts/YYYY-MM-DD/{platform}_draft.md`
 - Markdown compatible with Md2Wx editors
 - Technical depth preserved
 
-**Twitter/X Thread**:
-- 5-7 tweet thread
-- <280 chars per tweet
+**Twitter/X Thread** (中文推文):
+- 5-7 tweet thread in Chinese
+- <280 chars per tweet (中英文混合)
 - Numbered format (1/7, 2/7, etc.)
 - Hook → Value → CTA structure
-- Engagement-optimized
+- Build-in-public style
+- Engagement-optimized for Chinese tech community
 
 ### Monitoring Dashboard
 
@@ -319,10 +332,12 @@ obsidian_daily_digest/
 - Verify prompt templates exist in `prompts/`
 - Review generation logs in `DailyDigest/Drafts/{date}/`
 
-**5. Cron job not running**
-- Verify installation: `crontab -l | grep OBSIDIAN`
-- Check cron log: `tail -f vault/.taskmaster/status/cron.log`
-- Ensure full paths are used in cron entry
+**5. Automation not running**
+- **macOS**: Check LaunchAgent status: `launchctl list | grep obsidian`
+- **macOS**: View logs: `tail -f vault/.taskmaster/status/launchd.log`
+- **Linux**: Verify cron: `crontab -l | grep OBSIDIAN`
+- **Linux**: Check cron log: `tail -f vault/.taskmaster/status/cron.log`
+- **Catch-up**: Wrapper checks last 3 days, processes missing digests automatically
 
 ### Debug Mode
 
@@ -387,9 +402,11 @@ ls -lh test_vault/.taskmaster/status/
 ### Customizing Synthesis Rules
 
 Edit `test_vault/CLAUDE.md` (or production `vault/CLAUDE.md`):
-- Modify output structure template
-- Adjust summary length requirements
+- Modify output structure (current: Snapshot → Highlights → Synthesis → Connections)
+- Adjust summary verbosity (current: 2-4 bullet points + 1-2 sentence summary per note)
+- Configure relationship discovery depth
 - Add custom quality standards
+- Update Obsidian formatting requirements
 
 ## License
 

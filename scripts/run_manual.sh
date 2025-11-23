@@ -14,7 +14,7 @@
 # Usage: ./run_manual.sh [options]
 #   Options:
 #     --vault <path>     Specify vault path directly
-#     --date <YYYY-MM-DD> Specify date (default: today)
+#     --date <YYYY-MM-DD> Specify date (default: yesterday)
 #     --skip-drafts      Skip platform draft generation
 #     --yes              Skip confirmation prompt
 #
@@ -93,7 +93,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --vault <path>      Specify vault path directly"
-            echo "  --date <YYYY-MM-DD> Specify date (default: today)"
+            echo "  --date <YYYY-MM-DD> Specify date (default: yesterday)"
             echo "  --skip-drafts       Skip platform draft generation"
             echo "  --yes               Skip confirmation prompt"
             echo "  -h, --help          Show this help message"
@@ -157,18 +157,18 @@ log_info "Selected vault: $VAULT_PATH"
 # STEP 2: Select date (if not provided)
 if [ -z "$DATE" ]; then
     log_prompt "Select date:"
-    echo "  1) Today ($(date +%Y-%m-%d))"
-    echo "  2) Yesterday ($(date -v-1d +%Y-%m-%d 2>/dev/null || date -d yesterday +%Y-%m-%d 2>/dev/null))"
+    echo "  1) Yesterday ($(date -v-1d +%Y-%m-%d 2>/dev/null || date -d yesterday +%Y-%m-%d 2>/dev/null)) [Default]"
+    echo "  2) 2 days ago ($(date -v-2d +%Y-%m-%d 2>/dev/null || date -d '2 days ago' +%Y-%m-%d 2>/dev/null))"
     echo "  3) Custom date"
     read -rp "Enter choice [1-3]: " date_choice
 
     case $date_choice in
         1)
-            DATE=$(date +%Y-%m-%d)
-            ;;
-        2)
             # macOS vs Linux date command compatibility
             DATE=$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d yesterday +%Y-%m-%d 2>/dev/null)
+            ;;
+        2)
+            DATE=$(date -v-2d +%Y-%m-%d 2>/dev/null || date -d '2 days ago' +%Y-%m-%d 2>/dev/null)
             ;;
         3)
             read -rp "Enter date (YYYY-MM-DD): " DATE

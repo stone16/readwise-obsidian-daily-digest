@@ -13,7 +13,7 @@
 #
 # Usage: ./daily_runner.sh <vault_path> [date]
 #   vault_path: Absolute path to Obsidian vault (required)
-#   date: Date in YYYY-MM-DD format (optional, defaults to today)
+#   date: Date in YYYY-MM-DD format (optional, defaults to yesterday)
 #
 # Environment Variables:
 #   SKIP_DRAFTS: Set to "true" to skip platform draft generation
@@ -67,7 +67,8 @@ if [ $# -lt 1 ]; then
 fi
 
 VAULT_ROOT="$1"
-DATE="${2:-$(date +%Y-%m-%d)}"
+# Default to yesterday to avoid timezone issues and ensure complete days
+DATE="${2:-$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d yesterday +%Y-%m-%d 2>/dev/null)}"
 
 # Validate vault path
 if [ ! -d "$VAULT_ROOT" ]; then

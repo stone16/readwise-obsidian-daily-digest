@@ -7,7 +7,7 @@
 #
 # Usage: ./discover_changes.sh <vault_path> <date>
 #   vault_path: Absolute path to Obsidian vault (required)
-#   date: Date string in YYYY-MM-DD format (optional, defaults to today)
+#   date: Date string in YYYY-MM-DD format (optional, defaults to yesterday)
 #
 # Output: List of modified .md files (one per line) to stdout
 # Exit codes:
@@ -45,7 +45,8 @@ if [ $# -lt 1 ]; then
 fi
 
 VAULT_ROOT="$1"
-DATE="${2:-$(date +%Y-%m-%d)}"
+# Default to yesterday to avoid timezone issues and ensure complete days
+DATE="${2:-$(date -v-1d +%Y-%m-%d 2>/dev/null || date -d yesterday +%Y-%m-%d 2>/dev/null)}"
 
 # Validate vault path exists
 if [ ! -d "$VAULT_ROOT" ]; then
