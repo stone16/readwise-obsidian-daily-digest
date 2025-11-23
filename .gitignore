@@ -1,1 +1,11 @@
 test_vault/
+
+# Claude Code configuration (contains personal settings)
+.claude/
+
+# OpenSpec working directory (project-specific)
+openspec/
+
+# Logs
+*.log
+.DS_Store
