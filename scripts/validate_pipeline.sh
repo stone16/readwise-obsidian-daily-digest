@@ -203,8 +203,8 @@ done
 ###############################################################################
 log_section "Validation Summary"
 
-TOTAL=$((PASS + FAIL))
 echo ""
+echo -e "Total: $((PASS + FAIL))"
 echo -e "Passed: ${GREEN}$PASS${NC}"
 echo -e "Failed: ${RED}$FAIL${NC}"
 echo -e "Warnings: ${YELLOW}$WARN${NC}"

@@ -4,7 +4,7 @@ Automatically synthesize your daily knowledge from Obsidian notes and Readwise h
 
 ## What It Does
 
-```
+```text
 Obsidian Vault + Readwise → Daily Digest → Twitter/Newsletter/LinkedIn
 ```
 
@@ -173,7 +173,7 @@ Modify generation style by editing prompt templates:
 
 ## Architecture
 
-```
+```text
 ┌──────────────────────────────────────────────────────────┐
 │                     EXTRACTION (Parallel)                 │
 ├──────────────────┬───────────────────┬───────────────────┤
@@ -229,7 +229,7 @@ sudo apt install jq
 
 ## Project Structure
 
-```
+```text
 obsidian_daily_digest/
 ├── .env.example              # Environment template
 ├── scripts/

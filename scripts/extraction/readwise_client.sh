@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -o pipefail
+
 ###############################################################################
 # readwise_client.sh
 #
@@ -83,10 +85,11 @@ readwise_request() {
         fi
 
         # Extract HTTP code (last line)
-        http_code=$(echo "$response" | tail -1)
+        local http_code
+        http_code=$(echo "$response" | tail -1) || return 1
         # Extract body (all but last line)
         local body
-        body=$(echo "$response" | sed '$d')
+        body=$(echo "$response" | sed '$d') || return 1
 
         case "$http_code" in
             200|201)
@@ -238,7 +241,9 @@ readwise_reader_list() {
 # Args: JSON array of documents (via stdin)
 # Returns: Newline-separated list of categories
 readwise_extract_categories() {
-    jq -r '.[].tags[]?.name // empty' | sort -u
+    local result
+    result=$(jq -r '.[].tags[]?.name // empty' | sort -u) || return 1
+    echo "$result"
 }
 
 # Format ISO 8601 date for yesterday

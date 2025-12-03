@@ -157,6 +157,12 @@ for config_file in "$CONFIG_DIR"/*.yaml "$CONFIG_DIR"/*.yml; do
     platform_name=$(basename "$config_file" .yaml)
     platform_name=$(basename "$platform_name" .yml)
 
+    # Validate platform name contains only safe characters (prevent directory traversal)
+    if ! [[ "$platform_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        log_warn "Skipping platform with invalid name: $platform_name"
+        continue
+    fi
+
     # Check filter if specified
     if [ -n "$PLATFORMS_FILTER" ]; then
         if ! echo ",$PLATFORMS_FILTER," | grep -q ",$platform_name,"; then

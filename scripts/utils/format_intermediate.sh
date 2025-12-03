@@ -93,11 +93,15 @@ validate_intermediate_file() {
 
 # Extract frontmatter value
 # Args: file_path, field_name
+# Note: Uses sed instead of cut to preserve values containing colons (e.g., timestamps)
 get_frontmatter_value() {
     local file_path="$1"
     local field="$2"
 
-    sed -n '/^---$/,/^---$/p' "$file_path" | grep "^${field}:" | cut -d: -f2- | sed 's/^ *//'
+    sed -n '/^---$/,/^---$/p' "$file_path" | \
+        grep "^${field}:" | \
+        sed "s/^${field}:[[:space:]]*//" | \
+        head -1
 }
 
 # Count items in intermediate file
