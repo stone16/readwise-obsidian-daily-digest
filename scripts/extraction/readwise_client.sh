@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -o pipefail
 
 ###############################################################################
 # readwise_client.sh
@@ -83,7 +84,7 @@ readwise_request() {
         fi
 
         # Extract HTTP code (last line)
-        http_code=$(echo "$response" | tail -1)
+        http_code=$(echo "$response" | tail -1) || return 1
         # Extract body (all but last line)
         local body
         body=$(echo "$response" | sed '$d')
@@ -157,13 +158,13 @@ readwise_export_highlights() {
 
         # Extract results
         local results
-        results=$(echo "$response" | jq -r '.results // []')
+        results=$(echo "$response" | jq -r '.results // []') || return 1
 
         # Merge with all_results
-        all_results=$(echo "$all_results $results" | jq -s 'add')
+        all_results=$(echo "$all_results $results" | jq -s 'add') || return 1
 
         # Check for next page
-        page_cursor=$(echo "$response" | jq -r '.nextPageCursor // empty')
+        page_cursor=$(echo "$response" | jq -r '.nextPageCursor // empty') || return 1
 
         if [ -z "$page_cursor" ] || [ "$page_cursor" = "null" ]; then
             break
@@ -211,13 +212,13 @@ readwise_reader_list() {
 
         # Extract results
         local results
-        results=$(echo "$response" | jq -r '.results // []')
+        results=$(echo "$response" | jq -r '.results // []') || return 1
 
         # Merge with all_results
-        all_results=$(echo "$all_results $results" | jq -s 'add')
+        all_results=$(echo "$all_results $results" | jq -s 'add') || return 1
 
         # Check for next page
-        page_cursor=$(echo "$response" | jq -r '.nextPageCursor // empty')
+        page_cursor=$(echo "$response" | jq -r '.nextPageCursor // empty') || return 1
 
         if [ -z "$page_cursor" ] || [ "$page_cursor" = "null" ]; then
             break
@@ -238,7 +239,9 @@ readwise_reader_list() {
 # Args: JSON array of documents (via stdin)
 # Returns: Newline-separated list of categories
 readwise_extract_categories() {
-    jq -r '.[].tags[]?.name // empty' | sort -u
+    local result
+    result=$(jq -r '.[].tags[]?.name // empty') || return 1
+    echo "$result" | sort -u
 }
 
 # Format ISO 8601 date for yesterday

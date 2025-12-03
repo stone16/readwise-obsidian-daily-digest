@@ -10,7 +10,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DAILY_RUNNER="$SCRIPT_DIR/daily_runner.sh"
+DAILY_RUNNER="$SCRIPT_DIR/daily_runner_v2.sh"
 VAULT_PATH="$1"
 
 # Get dates to process (today and any missed days)
