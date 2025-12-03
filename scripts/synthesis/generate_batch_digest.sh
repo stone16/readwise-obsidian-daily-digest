@@ -91,6 +91,25 @@ fi
 
 log_batch "Multi-batch mode detected"
 
+# Get script directory to locate prompt templates
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROMPTS_DIR="$PROJECT_ROOT/prompts"
+
+# Load prompt templates
+BATCH_PROMPT_FILE="$PROMPTS_DIR/batch_digest.md"
+SYNTHESIS_PROMPT_FILE="$PROMPTS_DIR/batch_synthesis.md"
+
+if [ ! -f "$BATCH_PROMPT_FILE" ]; then
+    log_error "Batch prompt template not found: $BATCH_PROMPT_FILE"
+    exit 1
+fi
+
+if [ ! -f "$SYNTHESIS_PROMPT_FILE" ]; then
+    log_error "Synthesis prompt template not found: $SYNTHESIS_PROMPT_FILE"
+    exit 1
+fi
+
 # Create temp directory for sub-digests
 TEMP_DIR="$VAULT_ROOT/.taskmaster/tmp"
 mkdir -p "$TEMP_DIR"
@@ -113,24 +132,24 @@ while IFS= read -r line; do
         # Generate sub-digest for this batch
         log_info "Generating sub-digest $BATCH_NUM..."
 
-        SUB_PROMPT="I have detected changes in the following files (Batch $BATCH_NUM of multi-batch processing):
+        # Load and customize batch prompt template
+        BATCH_PROMPT_TEMPLATE=$(cat "$BATCH_PROMPT_FILE")
+        BATCH_PROMPT_TEMPLATE="${BATCH_PROMPT_TEMPLATE//\{\{DATE\}\}/$DATE}"
+        BATCH_PROMPT_TEMPLATE="${BATCH_PROMPT_TEMPLATE//\{\{BATCH_NUM\}\}/$BATCH_NUM}"
+
+        SUB_PROMPT="$BATCH_PROMPT_TEMPLATE
+
+---
+
+## FILES TO PROCESS (Batch $BATCH_NUM)
 
 $BATCH_FILES
 
-Task:
-1. Use your Read tool to ingest each of these files.
-2. Generate a sub-digest following CLAUDE.md rules.
-3. This is PART of a larger digest - use the same structure but note this is \"Sub-Digest $BATCH_NUM\"
-4. Save to: $SUB_DIGEST_FILE
+---
 
-Structure:
-- Frontmatter (YAML): date, tags, batch_number: $BATCH_NUM
-- 📊 Snapshot: Statistics for this batch
-- 🧠 Synthesis: Thematic narrative for this batch
-- 📝 Highlights: Per-note summaries (TL;DR, Full Summary, Key Quote, Action Items)
-- 🔗 Connections: WikiLinks in this batch
+## OUTPUT
 
-CRITICAL: Preserve ALL WikiLinks in [[format]], provide FULL SUMMARIES.
+Save the sub-digest to: $SUB_DIGEST_FILE
 "
 
         cd "$VAULT_ROOT"
@@ -171,33 +190,25 @@ $(cat "$SUB_FILE")
 "
 done
 
-SYNTHESIS_PROMPT="I have generated $TOTAL_BATCHES sub-digests from today's modified notes ($DATE).
+# Load and customize synthesis prompt template
+SYNTHESIS_PROMPT_TEMPLATE=$(cat "$SYNTHESIS_PROMPT_FILE")
+SYNTHESIS_PROMPT_TEMPLATE="${SYNTHESIS_PROMPT_TEMPLATE//\{\{DATE\}\}/$DATE}"
 
-Below are all the sub-digests:
+SYNTHESIS_PROMPT="$SYNTHESIS_PROMPT_TEMPLATE
+
+---
+
+## SUB-DIGESTS TO SYNTHESIZE
+
+Total batches: $TOTAL_BATCHES
 
 $SUB_DIGEST_CONTENT
 
-Task:
-1. Read and understand all sub-digests.
-2. Generate a UNIFIED Daily Digest that synthesizes insights across ALL batches.
-3. Follow the CLAUDE.md template structure exactly.
-4. Save to: $OUTPUT_FILE
+---
 
-Requirements for final synthesis:
-- **📊 Snapshot**: Combine statistics from all batches (total file count, merged top tags)
-- **🧠 Synthesis**: Create a unified 1-2 paragraph narrative connecting ALL notes thematically
-  - Identify overarching themes across batches
-  - Note relationships between batch themes
-- **📝 Highlights**: Merge all per-note summaries from all batches (preserve ALL notes)
-  - Maintain original TL;DR, Full Summary, Key Quote, Action Items
-  - Order logically by theme, not batch number
-- **🔗 Connections**: Deduplicate and combine all WikiLinks from all batches
+## OUTPUT
 
-CRITICAL:
-- This is the FINAL digest users will read - it must be coherent and complete
-- Preserve ALL WikiLinks in [[format]]
-- Do NOT lose any notes from sub-digests - include every single one
-- The user should not know this was generated from multiple batches
+Save the final unified Daily Digest to: $OUTPUT_FILE
 "
 
 cd "$VAULT_ROOT"

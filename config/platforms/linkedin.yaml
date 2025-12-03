@@ -1,0 +1,41 @@
+# LinkedIn Platform Configuration
+# Used by generate_drafts.sh to create platform-specific content
+
+platform:
+  name: linkedin
+  display_name: "LinkedIn"
+  enabled: true
+
+constraints:
+  max_length: 3000
+  max_hashtags: 5
+  include_links: true
+  include_mentions: false
+
+formatting:
+  format: post
+  # Line spacing for readability
+  double_space: true
+  # Use line breaks for emphasis
+  line_break_emphasis: true
+  # Emoji usage
+  emoji_headers: true
+
+content:
+  include_sections:
+    - key_insights
+    - professional_takeaways
+    - quotes
+  exclude_sections:
+    - personal_notes
+    - raw_content
+  tone: professional_thought_leader
+  # Hook for engagement
+  hook_enabled: true
+  # Call-to-action
+  cta_enabled: true
+  cta_text: "What are your thoughts? Share in the comments below."
+
+output:
+  filename: "linkedin_draft.md"
+  template: null

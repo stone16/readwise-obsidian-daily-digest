@@ -1,0 +1,42 @@
+# Newsletter Platform Configuration
+# Used by generate_drafts.sh to create platform-specific content
+
+platform:
+  name: newsletter
+  display_name: "Email Newsletter"
+  enabled: true
+
+constraints:
+  max_length: null  # No strict limit
+  max_sections: 5
+  include_images: false
+  include_links: true
+
+formatting:
+  format: long_form
+  # Section dividers
+  section_divider: "---"
+  # Header level for sections
+  header_level: 2
+  # Include table of contents
+  toc: true
+
+content:
+  include_sections:
+    - summary
+    - highlights
+    - key_insights
+    - quotes
+    - links
+  exclude_sections:
+    - raw_notes
+  tone: professional
+  # Personalization
+  greeting: "Here's what I've been reading and thinking about:"
+  signoff: "Until next time,"
+  # Include unsubscribe note
+  footer_note: true
+
+output:
+  filename: "newsletter_draft.md"
+  template: null

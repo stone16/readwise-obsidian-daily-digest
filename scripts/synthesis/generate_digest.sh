@@ -93,35 +93,39 @@ mkdir -p "$OUTPUT_DIR"
 OUTPUT_FILE="$OUTPUT_DIR/Daily Digest $DATE.md"
 log_info "Output: $OUTPUT_FILE"
 
-# Construct prompt for Claude Code
-# The prompt combines:
-# 1. Reference to CLAUDE.md system prompt (auto-loaded by Claude Code)
-# 2. Task specification
-# 3. File list to process
-# 4. Output file path
+# Get script directory to locate prompt templates
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PROMPTS_DIR="$PROJECT_ROOT/prompts"
+PROMPT_FILE="$PROMPTS_DIR/digest.md"
 
-PROMPT="I have detected changes in the following files today ($DATE):
+# Load prompt template
+if [ ! -f "$PROMPT_FILE" ]; then
+    log_error "Prompt template not found: $PROMPT_FILE"
+    exit 1
+fi
+
+PROMPT_TEMPLATE=$(cat "$PROMPT_FILE")
+
+# Replace placeholders in template
+PROMPT_TEMPLATE="${PROMPT_TEMPLATE//\{\{DATE\}\}/$DATE}"
+
+# Construct final prompt
+PROMPT="$PROMPT_TEMPLATE
+
+---
+
+## FILES TO PROCESS
+
+The following files were modified on $DATE:
 
 $FILE_LIST
 
-Task:
-1. Use your Read tool to ingest each of these files.
-2. Generate a Daily Digest following the rules in CLAUDE.md.
-3. The digest must follow this structure:
-   - Frontmatter (YAML): date, tags
-   - 📊 Snapshot: Statistics (file count, top tags)
-   - 🧠 Synthesis: 1-2 paragraph narrative connecting notes thematically
-   - 📝 Highlights: Per-note summaries with TL;DR, Full Summary, Key Quote, Action Items
-   - 🔗 Connections: WikiLinks referenced today
+---
 
-4. Save the output to: $OUTPUT_FILE
+## OUTPUT
 
-CRITICAL REMINDERS:
-- Preserve ALL WikiLinks in [[format]] (never convert to markdown links)
-- Provide FULL SUMMARIES (2-3 paragraphs) for each note in Highlights
-- Group notes thematically in Synthesis section
-- Do NOT invent WikiLinks - only link to files you read
-- Use exact template structure from CLAUDE.md
+Save the generated Daily Digest to: $OUTPUT_FILE
 "
 
 log_info "Invoking Claude Code..."
