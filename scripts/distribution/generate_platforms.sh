@@ -167,7 +167,7 @@ log_info ""
 
 # Track results - using temp files for parallel mode
 RESULTS_DIR=$(mktemp -d)
-trap "rm -rf $RESULTS_DIR" EXIT
+trap 'rm -rf "$RESULTS_DIR"' EXIT
 
 ###############################################################################
 # process_platform: Generate content for a single platform
@@ -191,7 +191,8 @@ process_platform() {
         return
     fi
 
-    local PROMPT_TEMPLATE=$(cat "$PROMPT_FILE")
+    local PROMPT_TEMPLATE
+    PROMPT_TEMPLATE=$(cat "$PROMPT_FILE")
     log_platform "  Using prompt: $prompt_file"
 
     # Output file
@@ -223,7 +224,8 @@ IMPORTANT:
     # Invoke Claude Code and capture output
     cd "$PROJECT_ROOT"
 
-    local TEMP_OUTPUT=$(mktemp)
+    local TEMP_OUTPUT
+    TEMP_OUTPUT=$(mktemp)
     if claude -p "$COMBINED_PROMPT" --allowedTools "Read" > "$TEMP_OUTPUT" 2>&1; then
         # Check if we got meaningful output
         if [ -s "$TEMP_OUTPUT" ]; then
@@ -240,7 +242,8 @@ IMPORTANT:
                 cat "$TEMP_OUTPUT"
             } > "$OUTPUT_FILE"
 
-            local FILE_SIZE=$(wc -l < "$OUTPUT_FILE" | tr -d ' ')
+            local FILE_SIZE
+            FILE_SIZE=$(wc -l < "$OUTPUT_FILE" | tr -d ' ')
             log_platform "  ✅ Complete ($FILE_SIZE lines) → $OUTPUT_FILE"
             echo "success" > "$result_file"
         else

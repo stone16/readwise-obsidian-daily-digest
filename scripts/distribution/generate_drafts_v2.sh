@@ -78,10 +78,12 @@ if [ ! -d "$VAULT_ROOT" ]; then
     exit 1
 fi
 
-# Check for yq (YAML parser) - fallback to grep-based parsing if not available
-USE_YQ=false
-if command -v yq &> /dev/null; then
-    USE_YQ=true
+# Verify yq (YAML parser) is available - required for nested YAML config parsing
+if ! command -v yq &> /dev/null; then
+    log_error "yq (YAML parser) not found. Please install yq:"
+    log_error "  macOS: brew install yq"
+    log_error "  Linux: snap install yq or download from https://github.com/mikefarah/yq"
+    exit 1
 fi
 
 # Verify Claude Code is available
@@ -116,30 +118,20 @@ SOURCE_CONTENT=$(cat "$SOURCE_FILE")
 OUTPUT_DIR="$VAULT_ROOT/DailyDigest/$DATE/drafts"
 mkdir -p "$OUTPUT_DIR"
 
-# Function to extract YAML value (simple grep-based fallback)
+# Function to extract YAML value using yq
 get_yaml_value() {
     local file="$1"
     local key="$2"
     local default="${3:-}"
 
-    if [ "$USE_YQ" = true ]; then
-        yq -r "$key // \"$default\"" "$file" 2>/dev/null || echo "$default"
-    else
-        # Simple grep-based extraction for basic keys
-        grep -E "^\s*${key##*.}:" "$file" 2>/dev/null | head -1 | sed 's/.*:\s*//' | tr -d '"' || echo "$default"
-    fi
+    yq -r "$key // \"$default\"" "$file" 2>/dev/null || echo "$default"
 }
 
 # Function to check if platform is enabled
 is_platform_enabled() {
     local config_file="$1"
     local enabled
-
-    if [ "$USE_YQ" = true ]; then
-        enabled=$(yq -r '.platform.enabled // true' "$config_file" 2>/dev/null)
-    else
-        enabled=$(grep -E "^\s*enabled:" "$config_file" 2>/dev/null | head -1 | sed 's/.*:\s*//' | tr -d ' ')
-    fi
+    enabled=$(yq -r '.platform.enabled // true' "$config_file" 2>/dev/null)
 
     [ "$enabled" = "true" ] || [ "$enabled" = "" ]
 }

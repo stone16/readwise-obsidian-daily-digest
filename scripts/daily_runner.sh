@@ -93,15 +93,8 @@ GENERATE_DRAFTS_SCRIPT="$SCRIPT_DIR/distribution/generate_drafts.sh"
 WRITE_STATUS_SCRIPT="$SCRIPT_DIR/monitoring/write_status.sh"
 UPDATE_SUMMARY_SCRIPT="$SCRIPT_DIR/monitoring/update_summary.sh"
 
-# New multi-source extraction scripts
-PARALLEL_EXTRACTOR="$SCRIPT_DIR/extraction/extract_parallel.sh"
-OBSIDIAN_EXTRACTOR="$SCRIPT_DIR/extraction/obsidian.sh"
-READWISE_EXTRACTOR="$SCRIPT_DIR/extraction/readwise.sh"
-CONSOLIDATE_SCRIPT="$SCRIPT_DIR/synthesis/consolidate.sh"
-
 # Output directory structure (date-based)
 DAILY_OUTPUT_DIR="$VAULT_ROOT/DailyDigest/$DATE"
-DRAFTS_OUTPUT_DIR="$DAILY_OUTPUT_DIR/drafts"
 
 # Validate all scripts exist
 for script in "$DISCOVER_SCRIPT" "$GENERATE_DIGEST_SCRIPT" "$GENERATE_BATCH_DIGEST_SCRIPT" \
