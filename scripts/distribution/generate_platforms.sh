@@ -69,6 +69,7 @@ ALL_PLATFORMS="twitter,linkedin,weixin,xiaohongshu"
 # Parse arguments
 INPUT_FILE=""
 PLATFORMS_FILTER=""
+PARALLEL_MODE=true  # Default to parallel
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -76,8 +77,12 @@ while [[ $# -gt 0 ]]; do
             PLATFORMS_FILTER="$2"
             shift 2
             ;;
+        --sequential)
+            PARALLEL_MODE=false
+            shift
+            ;;
         --help|-h)
-            echo "Usage: $0 <input_file> [--platforms <list>]"
+            echo "Usage: $0 <input_file> [--platforms <list>] [--sequential]"
             echo ""
             echo "Arguments:"
             echo "  input_file      Path to markdown file to process"
@@ -85,10 +90,12 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --platforms     Comma-separated list of platforms (default: all)"
             echo "                  Available: twitter, linkedin, weixin, xiaohongshu"
+            echo "  --sequential    Process platforms one by one (default: parallel)"
             echo ""
             echo "Examples:"
-            echo "  $0 ./daily_digest.md                          # All platforms"
+            echo "  $0 ./daily_digest.md                          # All platforms, parallel"
             echo "  $0 ./notes.md --platforms twitter,linkedin    # Specific platforms"
+            echo "  $0 ./notes.md --sequential                    # Sequential processing"
             exit 0
             ;;
         -*)
@@ -151,25 +158,25 @@ log_header "══════════════════════�
 log_info "Input: $INPUT_FILE"
 log_info "Output directory: $OUTPUT_DIR"
 log_info "Platforms: $PLATFORMS_TO_PROCESS"
+if [ "$PARALLEL_MODE" = "true" ]; then
+    log_info "Mode: PARALLEL (faster)"
+else
+    log_info "Mode: Sequential"
+fi
 log_info ""
 
-# Track results
-SUCCESS_COUNT=0
-TOTAL_PLATFORMS=0
+# Track results - using temp files for parallel mode
+RESULTS_DIR=$(mktemp -d)
+trap "rm -rf $RESULTS_DIR" EXIT
 
-# Process each platform
-IFS=',' read -ra PLATFORM_ARRAY <<< "$PLATFORMS_TO_PROCESS"
-for platform in "${PLATFORM_ARRAY[@]}"; do
-    # Trim whitespace
-    platform=$(echo "$platform" | xargs)
-
-    # Check if platform is valid
-    if [ -z "${PLATFORM_CONFIG[$platform]:-}" ]; then
-        log_warn "Unknown platform: $platform (skipping)"
-        continue
-    fi
-
-    TOTAL_PLATFORMS=$((TOTAL_PLATFORMS + 1))
+###############################################################################
+# process_platform: Generate content for a single platform
+# Arguments: platform_name
+# Returns: Writes result file to RESULTS_DIR
+###############################################################################
+process_platform() {
+    local platform="$1"
+    local result_file="$RESULTS_DIR/${platform}.result"
 
     # Parse platform config
     IFS=':' read -r display_name language prompt_file <<< "${PLATFORM_CONFIG[$platform]}"
@@ -177,20 +184,21 @@ for platform in "${PLATFORM_ARRAY[@]}"; do
     log_platform "Processing: $display_name ($platform)"
 
     # Check for prompt template
-    PROMPT_FILE="$PROMPTS_DIR/$prompt_file"
+    local PROMPT_FILE="$PROMPTS_DIR/$prompt_file"
     if [ ! -f "$PROMPT_FILE" ]; then
         log_warn "  Prompt template not found: $PROMPT_FILE (skipping)"
-        continue
+        echo "skipped" > "$result_file"
+        return
     fi
 
-    PROMPT_TEMPLATE=$(cat "$PROMPT_FILE")
+    local PROMPT_TEMPLATE=$(cat "$PROMPT_FILE")
     log_platform "  Using prompt: $prompt_file"
 
     # Output file
-    OUTPUT_FILE="$OUTPUT_DIR/${INPUT_BASENAME}_${platform}.md"
+    local OUTPUT_FILE="$OUTPUT_DIR/${INPUT_BASENAME}_${platform}.md"
 
     # Construct combined prompt
-    COMBINED_PROMPT="$PROMPT_TEMPLATE
+    local COMBINED_PROMPT="$PROMPT_TEMPLATE
 
 ---
 
@@ -215,7 +223,7 @@ IMPORTANT:
     # Invoke Claude Code and capture output
     cd "$PROJECT_ROOT"
 
-    TEMP_OUTPUT=$(mktemp)
+    local TEMP_OUTPUT=$(mktemp)
     if claude -p "$COMBINED_PROMPT" --allowedTools "Read" > "$TEMP_OUTPUT" 2>&1; then
         # Check if we got meaningful output
         if [ -s "$TEMP_OUTPUT" ]; then
@@ -232,18 +240,89 @@ IMPORTANT:
                 cat "$TEMP_OUTPUT"
             } > "$OUTPUT_FILE"
 
-            FILE_SIZE=$(wc -l < "$OUTPUT_FILE" | tr -d ' ')
+            local FILE_SIZE=$(wc -l < "$OUTPUT_FILE" | tr -d ' ')
             log_platform "  ✅ Complete ($FILE_SIZE lines) → $OUTPUT_FILE"
-            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            echo "success" > "$result_file"
         else
             log_warn "  No output generated"
+            echo "empty" > "$result_file"
         fi
     else
         log_error "  Generation failed"
-        log_warn "  Check output: $TEMP_OUTPUT"
+        echo "failed" > "$result_file"
     fi
 
     rm -f "$TEMP_OUTPUT"
+}
+
+# Export required variables and functions for subshells
+export -f process_platform log_platform log_warn log_error
+export PROMPTS_DIR SOURCE_CONTENT OUTPUT_DIR INPUT_BASENAME PROJECT_ROOT INPUT_FILE RESULTS_DIR
+export RED YELLOW GREEN BLUE CYAN MAGENTA NC
+
+# Build list of valid platforms
+declare -a VALID_PLATFORMS=()
+IFS=',' read -ra PLATFORM_ARRAY <<< "$PLATFORMS_TO_PROCESS"
+for platform in "${PLATFORM_ARRAY[@]}"; do
+    platform=$(echo "$platform" | xargs)
+    if [ -n "${PLATFORM_CONFIG[$platform]:-}" ]; then
+        VALID_PLATFORMS+=("$platform")
+    else
+        log_warn "Unknown platform: $platform (skipping)"
+    fi
+done
+
+TOTAL_PLATFORMS=${#VALID_PLATFORMS[@]}
+
+if [ "$TOTAL_PLATFORMS" -eq 0 ]; then
+    log_error "No valid platforms to process"
+    exit 1
+fi
+
+# Process platforms
+if [ "$PARALLEL_MODE" = "true" ] && [ "$TOTAL_PLATFORMS" -gt 1 ]; then
+    log_info "Starting $TOTAL_PLATFORMS platforms in parallel..."
+
+    # Export the associative array by converting to environment
+    export PLATFORM_CONFIG_twitter="${PLATFORM_CONFIG[twitter]}"
+    export PLATFORM_CONFIG_linkedin="${PLATFORM_CONFIG[linkedin]}"
+    export PLATFORM_CONFIG_weixin="${PLATFORM_CONFIG[weixin]}"
+    export PLATFORM_CONFIG_xiaohongshu="${PLATFORM_CONFIG[xiaohongshu]}"
+
+    # Launch all platforms in parallel
+    PIDS=()
+    for platform in "${VALID_PLATFORMS[@]}"; do
+        (
+            # Reconstruct PLATFORM_CONFIG in subshell
+            declare -A PLATFORM_CONFIG=(
+                ["twitter"]="$PLATFORM_CONFIG_twitter"
+                ["linkedin"]="$PLATFORM_CONFIG_linkedin"
+                ["weixin"]="$PLATFORM_CONFIG_weixin"
+                ["xiaohongshu"]="$PLATFORM_CONFIG_xiaohongshu"
+            )
+            process_platform "$platform"
+        ) &
+        PIDS+=($!)
+    done
+
+    # Wait for all to complete
+    for pid in "${PIDS[@]}"; do
+        wait "$pid" 2>/dev/null || true
+    done
+else
+    # Sequential processing
+    for platform in "${VALID_PLATFORMS[@]}"; do
+        process_platform "$platform"
+    done
+fi
+
+# Count results
+SUCCESS_COUNT=0
+for platform in "${VALID_PLATFORMS[@]}"; do
+    result_file="$RESULTS_DIR/${platform}.result"
+    if [ -f "$result_file" ] && [ "$(cat "$result_file")" = "success" ]; then
+        SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+    fi
 done
 
 # Summary
