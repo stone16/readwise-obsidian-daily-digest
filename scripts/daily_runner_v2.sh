@@ -140,6 +140,7 @@ fi
 PARALLEL_EXTRACTOR="$SCRIPT_DIR/extraction/extract_parallel.sh"
 CONSOLIDATE_SCRIPT="$SCRIPT_DIR/synthesis/consolidate.sh"
 GENERATE_DIGEST_SCRIPT="$SCRIPT_DIR/synthesis/generate_digest.sh"
+GENERATE_CHUNKED_DIGEST_SCRIPT="$SCRIPT_DIR/synthesis/generate_chunked_digest.sh"
 GENERATE_PLATFORMS_SCRIPT="$SCRIPT_DIR/distribution/generate_platforms.sh"
 WRITE_STATUS_SCRIPT="$SCRIPT_DIR/monitoring/write_status.sh"
 UPDATE_SUMMARY_SCRIPT="$SCRIPT_DIR/monitoring/update_summary.sh"
@@ -220,14 +221,30 @@ if [ "$SKIP_SYNTHESIS" = "true" ]; then
 else
     log_phase "3/5 Synthesis - Generating Daily Digest with Claude"
 
-    if [ -x "$GENERATE_DIGEST_SCRIPT" ]; then
-        # Pass consolidated content to digest generator
+    # Use chunked digest script for large inputs (handles both small and large)
+    if [ -x "$GENERATE_CHUNKED_DIGEST_SCRIPT" ]; then
+        log_info "Using chunked digest generator (handles large inputs)..."
+        "$GENERATE_CHUNKED_DIGEST_SCRIPT" "$VAULT_ROOT" "$DATE" || {
+            log_warn "Chunked synthesis failed, trying legacy method..."
+            if [ -x "$GENERATE_DIGEST_SCRIPT" ]; then
+                cat "$CONSOLIDATED_FILE" | "$GENERATE_DIGEST_SCRIPT" "$VAULT_ROOT" "$DATE" || {
+                    log_warn "Synthesis failed, using consolidated file as fallback"
+                    cp "$CONSOLIDATED_FILE" "$DIGEST_FILE"
+                }
+            else
+                log_warn "Legacy synthesis script not found, using consolidated file"
+                cp "$CONSOLIDATED_FILE" "$DIGEST_FILE"
+            fi
+        }
+    elif [ -x "$GENERATE_DIGEST_SCRIPT" ]; then
+        # Fallback to legacy script
+        log_info "Using legacy digest generator..."
         cat "$CONSOLIDATED_FILE" | "$GENERATE_DIGEST_SCRIPT" "$VAULT_ROOT" "$DATE" || {
             log_warn "Synthesis failed, using consolidated file as fallback"
             cp "$CONSOLIDATED_FILE" "$DIGEST_FILE"
         }
     else
-        log_warn "Synthesis script not found, using consolidated file"
+        log_warn "Synthesis scripts not found, using consolidated file"
         cp "$CONSOLIDATED_FILE" "$DIGEST_FILE"
     fi
 fi

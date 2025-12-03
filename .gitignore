@@ -11,4 +11,6 @@ openspec/
 
 # Logs
 *.log
+.DS_Store.tmp/
+
 .DS_Store
