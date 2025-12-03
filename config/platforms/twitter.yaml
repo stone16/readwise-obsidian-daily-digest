@@ -1,0 +1,45 @@
+# Twitter/X Platform Configuration
+# Used by generate_drafts.sh to create platform-specific content
+
+platform:
+  name: twitter
+  display_name: "Twitter/X"
+  enabled: true
+
+constraints:
+  max_length: 280
+  thread_max_posts: 10
+  include_hashtags: true
+  include_links: true
+
+formatting:
+  # Output format: thread, single, or carousel
+  format: thread
+  # How to handle long content
+  truncation: smart_break
+  # Character to use for thread numbering
+  thread_prefix: ""
+  # Add thread connector
+  thread_connector: "🧵"
+
+content:
+  # Sections to include from digest
+  include_sections:
+    - highlights
+    - key_insights
+    - quotes
+  # Exclude sections
+  exclude_sections:
+    - full_content
+    - raw_notes
+  # Tone/style adjustment
+  tone: conversational
+  # Add call-to-action
+  cta_enabled: true
+  cta_text: "Full digest in my Obsidian vault"
+
+output:
+  # Output filename pattern
+  filename: "twitter_draft.md"
+  # Template to use (optional custom template)
+  template: null

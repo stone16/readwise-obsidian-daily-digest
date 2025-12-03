@@ -1,5 +1,8 @@
 test_vault/
 
+# Environment variables (contains API keys)
+.env
+
 # Claude Code configuration (contains personal settings)
 .claude/
 

@@ -80,13 +80,21 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Script paths
-DISCOVER_SCRIPT="$SCRIPT_DIR/ingestion/discover_changes.sh"
+# Load environment variables if .env exists
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    source "$PROJECT_ROOT/.env"
+fi
+
+# Script paths (extraction replaces ingestion)
+DISCOVER_SCRIPT="$SCRIPT_DIR/extraction/discover_changes.sh"
 GENERATE_DIGEST_SCRIPT="$SCRIPT_DIR/synthesis/generate_digest.sh"
 GENERATE_BATCH_DIGEST_SCRIPT="$SCRIPT_DIR/synthesis/generate_batch_digest.sh"
 GENERATE_DRAFTS_SCRIPT="$SCRIPT_DIR/distribution/generate_drafts.sh"
 WRITE_STATUS_SCRIPT="$SCRIPT_DIR/monitoring/write_status.sh"
 UPDATE_SUMMARY_SCRIPT="$SCRIPT_DIR/monitoring/update_summary.sh"
+
+# Output directory structure (date-based)
+DAILY_OUTPUT_DIR="$VAULT_ROOT/DailyDigest/$DATE"
 
 # Validate all scripts exist
 for script in "$DISCOVER_SCRIPT" "$GENERATE_DIGEST_SCRIPT" "$GENERATE_BATCH_DIGEST_SCRIPT" \

@@ -1,0 +1,48 @@
+# Blog Platform Configuration
+# Used by generate_drafts.sh to create platform-specific content
+
+platform:
+  name: blog
+  display_name: "Blog Post"
+  enabled: false  # Disabled by default
+
+constraints:
+  max_length: null
+  min_length: 500
+  include_images: true
+  include_links: true
+  seo_optimized: true
+
+formatting:
+  format: article
+  # Header hierarchy
+  header_start_level: 2
+  # Code block style
+  code_blocks: fenced
+  # Include metadata
+  frontmatter: true
+  frontmatter_fields:
+    - title
+    - date
+    - tags
+    - description
+
+content:
+  include_sections:
+    - introduction
+    - summary
+    - highlights
+    - key_insights
+    - quotes
+    - conclusion
+  exclude_sections:
+    - raw_notes
+  tone: informative
+  # SEO elements
+  meta_description: true
+  # Reading time estimate
+  reading_time: true
+
+output:
+  filename: "blog_draft.md"
+  template: null
