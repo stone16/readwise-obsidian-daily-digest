@@ -85,7 +85,8 @@ readwise_request() {
         # Extract HTTP code (last line)
         http_code=$(echo "$response" | tail -1)
         # Extract body (all but last line)
-        local body=$(echo "$response" | sed '$d')
+        local body
+        body=$(echo "$response" | sed '$d')
 
         case "$http_code" in
             200|201)
